@@ -22,7 +22,8 @@ async function startCamera() {
         video.srcObject = stream;
 
         const scanner = new QrScanner(video, result => {
-            console.log("QR detectado:", result.data);
+    console.log("QR detectado:", result.data);
+    result.data = result.data.trim(); // remove espaços extras
 
             // Espera QR no formato "1:D"
             if (result.data.includes(":")) {
@@ -40,5 +41,6 @@ async function startCamera() {
         alert("Erro ao acessar câmera: " + error);
     }
 }
+
 
 startCamera();
