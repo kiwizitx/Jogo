@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Hacker Timer</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: monospace;
+    color: #00ff9f;
+    height: 100vh;
+    width: 100vw;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#main {
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* MATRIX BACKGROUND */
+canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    display: block;
+}
+
+/* TIMER */
+#timer {
+    font-size: 90px;
+    cursor: pointer;
+    user-select: none;
+    margin-bottom: 5px;
+}
+#creditos {
+    font-size: 20px;
+    margin-bottom: 20px;
+}
+
+/* CONTROLS */
+#controls {
+    text-align: center;
+    margin-bottom: 25px;
+}
+button {
+    background: black;
+    color: #00ff9f;
+    border: 2px solid #00ff9f;
+    padding: 10px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    margin: 5px;
+    transition: 0.2s;
+}
+button:hover { background: #00462f; }
+
+/* PASSWORD GRID */
+.grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.password-box-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.password-box { display: flex; gap: 5px; }
+.digit {
+    width: 48px;
+    height: 55px;
+    background: rgba(0, 255, 159, 0.08);
+    border: 2px solid #00ff9f;
+    text-align: center;
+    font-size: 32px;
+    color: #00ff9f;
+    outline: none;
+    transition: 0.2s;
+}
+.correct { background: rgba(0,255,0,0.2); border-color: #0f0; color: #0f0; }
+.incorrect { background: rgba(255,0,0,0.2); border-color: #f00; color: #f00; }
+
+.blink {
+    animation: blink 0.6s infinite alternate;
+}
+@keyframes blink {
+    0% { border-color: red; background: rgba(255, 0, 0, 0.1); }
+    100% { border-color: #ff3b3b; background: rgba(255, 0, 0, 0.3); }
+}
+
+#endMessage {
+    text-align: center;
+    font-size: 40px;
+    color: red;
+    margin-top: 20px;
+    display: none;
+}
+
+#enter {
+    margin-top: 20px;
+    padding: 12px 25px;
+    font-size: 20px;
+    background: #00aa00;
+    color: black;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 6px;
+    display: none; /* Começa escondido */
+}
+
+#enter:hover { background: #00ff00; }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+
+<div id="main">
+
+    <div id="timer">05:00</div>
+    <div id="creditos">Programado por Kiwizitx</div>
+
+    <div id="controls">
+        <button id="minus5">-5s</button>
+        <button id="plus5">+5s</button>
+        <button id="start">START</button>
+    </div>
+
+    <div class="grid" id="passGrid"></div>
+
+    <button id="enter">ENTRAR</button>
+
+    <div id="endMessage">O tempo acabou</div>
+
+</div>
+
+<script>
+/* ------------------ MATRIX RAIN ------------------ */
+const canvas = document.getElementById("matrix");
+const ctx = canvas.getContext("2d");
+let fontSize = 16;
+let columns = 0;
+let drops = [];
+let redMode = false;
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    columns = Math.floor(canvas.width / fontSize);
+    drops = Array.from({length: columns}, () => Math.random() * canvas.height / fontSize);
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+const chars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&";
+
+function drawMatrix() {
+    ctx.fillStyle = "rgba(0,0,0,0.1)";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = redMode ? "#ff0000" : "#00ff9f";
+    ctx.font = fontSize + "px monospace";
+    drops.forEach((y,i)=>{
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(text,i*fontSize,y*fontSize);
+        if(y*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
+        drops[i]++;
+    });
+}
+setInterval(drawMatrix,50);
+
+/* ------------------ PASSWORD INPUTS ------------------ */
+const senhasCorretas = ["PERIS","13578","PLCDS","JOALE"];
+const passGrid = document.getElementById("passGrid");
+const statusSenhas = Array(4).fill(false); // Controle senhas corretas
+
+for(let i=0;i<4;i++){
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("password-box-wrapper");
+
+    const box=document.createElement("div");
+    box.classList.add("password-box");
+    for(let j=0;j<5;j++){
+        const inp=document.createElement("input");
+        inp.classList.add("digit");
+        inp.maxLength=1;
+        inp.oninput=()=>{ if(inp.value && inp.nextElementSibling) inp.nextElementSibling.focus(); };
+        box.appendChild(inp);
+    }
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "Confirmar";
+    confirmBtn.onclick = ()=> {
+        const valores = [...box.querySelectorAll(".digit")].map(d=>d.value.toUpperCase()).join("");
+        if(valores === senhasCorretas[i].toUpperCase()){
+            box.querySelectorAll(".digit").forEach(d=>{
+                d.classList.remove("incorrect");
+                d.classList.add("correct");
+            });
+            statusSenhas[i] = true;
+        } else {
+            totalSeconds = Math.max(0, totalSeconds-10);
+            const digits = box.querySelectorAll(".digit");
+            digits.forEach(d => { d.classList.add("incorrect"); });
+            let blinkCount = 0;
+            const blinkInterval = setInterval(()=>{
+                digits.forEach(d => d.style.visibility = d.style.visibility==='hidden'?'visible':'hidden');
+                blinkCount++;
+                if(blinkCount>5){
+                    clearInterval(blinkInterval);
+                    digits.forEach(d => { d.style.visibility='visible'; d.classList.remove("incorrect"); });
+                }
+            },100);
+        }
+
+        // Verifica se todas as senhas estão corretas
+        if(statusSenhas.every(v=>v)){
+            document.getElementById("enter").style.display="inline-block";
+        }
+    };
+
+    wrapper.appendChild(box);
+    wrapper.appendChild(confirmBtn);
+    passGrid.appendChild(wrapper);
+}
+
+/* ------------------ TIMER ------------------ */
+let totalSeconds=300;
+let interval=null;
+const timerEl=document.getElementById("timer");
+
+function updateDisplay(){
+    const min=String(Math.floor(totalSeconds/60)).padStart(2,"0");
+    const sec=String(totalSeconds%60).padStart(2,"0");
+    timerEl.textContent=`${min}:${sec}`;
+}
+
+document.getElementById("plus5").onclick=()=>{ totalSeconds+=5; updateDisplay(); };
+document.getElementById("minus5").onclick=()=>{ totalSeconds=Math.max(0,totalSeconds-5); updateDisplay(); };
+timerEl.onclick=()=> {
+    const novo=prompt("Digite o novo tempo em segundos:");
+    if(novo && !isNaN(novo)){ totalSeconds=Number(novo); updateDisplay(); }
+};
+document.getElementById("start").onclick=()=> {
+    document.getElementById("start").style.display="none";
+    interval=setInterval(()=>{
+        totalSeconds--;
+        updateDisplay();
+        if(totalSeconds<=0){ clearInterval(interval); endTimer(); }
+    },1000);
+};
+
+function endTimer(){
+    document.getElementById("timer").textContent="O tempo acabou";
+    redMode = true; // Matrix vermelho
+    document.querySelectorAll(".digit").forEach(d=>d.classList.add("blink"));
+}
+
+/* ------------------ BOTÃO ENTRAR ------------------ */
+document.getElementById("enter").onclick = ()=> {
+    window.location = "video.html";
+};
+
+updateDisplay();
+</script>
+
+</body>
+</html>
