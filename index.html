@@ -117,7 +117,7 @@ button:hover { background: #00462f; }
     cursor: pointer;
     font-weight: bold;
     border-radius: 6px;
-    display: none; /* Começa escondido */
+    display: none;
 }
 
 #enter:hover { background: #00ff00; }
@@ -183,7 +183,7 @@ setInterval(drawMatrix,50);
 /* ------------------ PASSWORD INPUTS ------------------ */
 const senhasCorretas = ["PERIS","23578","PLCDS","JOALE"];
 const passGrid = document.getElementById("passGrid");
-const statusSenhas = Array(4).fill(false); // Controle senhas corretas
+const statusSenhas = Array(4).fill(false);
 
 for(let i=0;i<4;i++){
     const wrapper = document.createElement("div");
@@ -191,40 +191,59 @@ for(let i=0;i<4;i++){
 
     const box=document.createElement("div");
     box.classList.add("password-box");
+
+    // 5 inputs para cada senha
     for(let j=0;j<5;j++){
         const inp=document.createElement("input");
         inp.classList.add("digit");
         inp.maxLength=1;
-        inp.oninput=()=>{ if(inp.value && inp.nextElementSibling) inp.nextElementSibling.focus(); };
+
+        // Letras viram maiúsculas automaticamente
+        inp.addEventListener("input", () => {
+            if (isNaN(inp.value)) inp.value = inp.value.toUpperCase();
+            if(inp.value && inp.nextElementSibling) inp.nextElementSibling.focus();
+        });
+
         box.appendChild(inp);
     }
 
     const confirmBtn = document.createElement("button");
     confirmBtn.textContent = "Confirmar";
+
     confirmBtn.onclick = ()=> {
-        const valores = [...box.querySelectorAll(".digit")].map(d=>d.value.toUpperCase()).join("");
-        if(valores === senhasCorretas[i].toUpperCase()){
+        const senhaCorreta = senhasCorretas[i];
+        const isLetra = /[A-Za-z]/.test(senhaCorreta[0]);
+
+        const valores = [...box.querySelectorAll(".digit")]
+            .map(d => isLetra ? d.value.toUpperCase() : d.value)
+            .join("");
+
+        if(valores === senhaCorreta){
             box.querySelectorAll(".digit").forEach(d=>{
                 d.classList.remove("incorrect");
-                d.classList.add("correct");
+            d.classList.add("correct");
             });
             statusSenhas[i] = true;
+
         } else {
             totalSeconds = Math.max(0, totalSeconds-10);
             const digits = box.querySelectorAll(".digit");
             digits.forEach(d => { d.classList.add("incorrect"); });
+
             let blinkCount = 0;
             const blinkInterval = setInterval(()=>{
                 digits.forEach(d => d.style.visibility = d.style.visibility==='hidden'?'visible':'hidden');
                 blinkCount++;
-                if(blinkCount>5){
+                if(blinkCount > 5){
                     clearInterval(blinkInterval);
-                    digits.forEach(d => { d.style.visibility='visible'; d.classList.remove("incorrect"); });
+                    digits.forEach(d => { 
+                        d.style.visibility='visible'; 
+                        d.classList.remove("incorrect"); 
+                    });
                 }
             },100);
         }
 
-        // Verifica se todas as senhas estão corretas
         if(statusSenhas.every(v=>v)){
             document.getElementById("enter").style.display="inline-block";
         }
@@ -248,10 +267,12 @@ function updateDisplay(){
 
 document.getElementById("plus5").onclick=()=>{ totalSeconds+=5; updateDisplay(); };
 document.getElementById("minus5").onclick=()=>{ totalSeconds=Math.max(0,totalSeconds-5); updateDisplay(); };
+
 timerEl.onclick=()=> {
     const novo=prompt("Digite o novo tempo em segundos:");
     if(novo && !isNaN(novo)){ totalSeconds=Number(novo); updateDisplay(); }
 };
+
 document.getElementById("start").onclick=()=> {
     document.getElementById("start").style.display="none";
     interval=setInterval(()=>{
@@ -263,7 +284,7 @@ document.getElementById("start").onclick=()=> {
 
 function endTimer(){
     document.getElementById("timer").textContent="O tempo acabou";
-    redMode = true; // Matrix vermelho
+    redMode = true;
     document.querySelectorAll(".digit").forEach(d=>d.classList.add("blink"));
 }
 
@@ -277,5 +298,3 @@ updateDisplay();
 
 </body>
 </html>
-
-
